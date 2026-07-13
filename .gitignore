@@ -1,0 +1,26 @@
+# Go build artifacts
+pryl
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test and coverage output
+coverage.out
+coverage.html
+*.test
+
+# Go workspace files
+go.work
+go.work.sum
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Operating system files
+.DS_Store
+Thumbs.db
