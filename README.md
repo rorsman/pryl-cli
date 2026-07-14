@@ -54,6 +54,40 @@ Explicitly print a secret to the terminal:
 pryl secret generate --length 32 --print
 ```
 
+Encode and decode Base64. Input can be supplied as an argument or through stdin:
+
+```sh
+pryl encode base64 hello
+# aGVsbG8=
+
+pryl decode base64 aGVsbG8=
+# hello
+
+printf 'hello' | pryl encode base64 --encoding rawurl
+printf 'aGVsbG8' | pryl decode base64 --encoding rawurl
+
+pryl encode hex hello
+# 68656c6c6f
+
+pryl decode hex 68656c6c6f
+# hello
+
+pryl encode url 'hello world/?'
+# hello%20world%2F%3F
+
+pryl decode url 'hello%20world%2F%3F'
+# hello world/?
+```
+
+Base64 supports `standard`, `raw`, `url`, and `rawurl`. Hex and URL encoding do not require an additional encoding option. Options may be placed before or after the input value:
+
+```sh
+pryl encode base64 --encoding raw hello
+pryl encode base64 hello --encoding raw
+```
+
+Output is written without an extra newline, making the commands suitable for pipelines and binary data. Invalid arguments and input return a non-zero exit code and include the relevant command usage. Unsupported encodings are reported as not implemented.
+
 Check the CLI version:
 
 ```sh
