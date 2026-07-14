@@ -1,5 +1,5 @@
 # Go build artifacts
-pryl
+/pryl
 *.exe
 *.exe~
 *.dll
