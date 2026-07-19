@@ -11,6 +11,7 @@ import (
 	"pryl/internal/clipboard"
 	"pryl/internal/hexutil"
 	"pryl/internal/secret"
+	"pryl/internal/subnet"
 	"pryl/internal/timeutil"
 	"pryl/internal/urlutil"
 	"pryl/internal/version"
@@ -21,6 +22,7 @@ const (
 	secretUsageText  = "Usage: pryl secret generate [--length N] [--alphabet alphanumeric|hex|base64url] [--print]\n"
 	base64UsageText  = "Usage: pryl {encode|decode} base64 [--encoding standard|raw|url|rawurl] [value]\n"
 	simpleCodecUsage = "Usage: pryl {encode|decode} {hex|url} [value]\n"
+	subnetUsageText  = "Usage: pryl subnet [--json] [--contains address] <cidr>\n"
 
 	usageText = `Usage:
   pryl time epoch [--unit seconds|milliseconds] <value>
@@ -31,6 +33,7 @@ const (
   pryl decode hex [value]
   pryl encode url [value]
   pryl decode url [value]
+  pryl subnet [--json] [--contains address] <cidr>
 
 Commands:
   time      Time and timestamp utilities
@@ -70,9 +73,72 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return runCodec(args[1:], true, stdin, stdout, stderr)
 	case "decode":
 		return runCodec(args[1:], false, stdin, stdout, stderr)
+	case "subnet":
+		return runSubnet(args[1:], stdout)
 	default:
 		return usageError(fmt.Sprintf("unknown command %q", args[0]), usageText)
 	}
+}
+
+func runSubnet(args []string, stdout io.Writer) error {
+	if len(args) == 0 || (len(args) == 1 && isHelp(args[0])) {
+		_, err := io.WriteString(stdout, subnetUsageText)
+		return err
+	}
+
+	jsonOutput := false
+	var containsAddress string
+	var values []string
+	for index := 0; index < len(args); index++ {
+		switch {
+		case isHelp(args[index]):
+			return usageError("help does not accept arguments", subnetUsageText)
+		case args[index] == "--json":
+			jsonOutput = true
+		case args[index] == "--contains" || strings.HasPrefix(args[index], "--contains="):
+			value, err := optionValue(args, &index, "--contains")
+			if err != nil {
+				return usageError(err.Error(), subnetUsageText)
+			}
+			containsAddress = value
+		case strings.HasPrefix(args[index], "-"):
+			return usageError(fmt.Sprintf("unknown option %q", args[index]), subnetUsageText)
+		default:
+			values = append(values, args[index])
+		}
+	}
+	if len(values) != 1 {
+		return usageError("subnet requires exactly one CIDR value", subnetUsageText)
+	}
+
+	if containsAddress != "" {
+		contained, err := subnet.Contains(values[0], containsAddress)
+		if err != nil {
+			return usageError(err.Error(), subnetUsageText)
+		}
+		_, err = fmt.Fprintln(stdout, contained)
+		return err
+	}
+
+	info, err := subnet.Calculate(values[0])
+	if err != nil {
+		return usageError(err.Error(), subnetUsageText)
+	}
+	if jsonOutput {
+		encoded, err := info.JSON()
+		if err != nil {
+			return fmt.Errorf("format subnet as JSON: %w", err)
+		}
+		_, err = fmt.Fprintln(stdout, string(encoded))
+		return err
+	}
+
+	_, err = fmt.Fprintf(stdout, "CIDR:           %s\nNetwork:        %s\nLast address:   %s\nAddress count:  %s\nUsable first:   %s\nUsable last:    %s\nUsable hosts:   %s\n", info.Prefix, info.Network, info.Last, info.AddressCount, info.UsableFirst, info.UsableLast, info.UsableCount)
+	return err
+}
+
+func isHelp(argument string) bool {
+	return argument == "help" || argument == "--help" || argument == "-h"
 }
 
 func usageError(message, usage string) error {

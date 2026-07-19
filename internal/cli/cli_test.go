@@ -72,3 +72,23 @@ func TestRunEncodeBase64AcceptsOptionAfterValue(t *testing.T) {
 		t.Fatalf("output = %q; want %q", got, want)
 	}
 }
+
+func TestRunSubnet(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if err := Run([]string{"subnet", "192.168.1.42/24"}, strings.NewReader(""), &stdout, &stderr); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stdout.String(), "Network:        192.168.1.0") || !strings.Contains(stdout.String(), "Usable hosts:   254") {
+		t.Fatalf("output = %q; want subnet details", stdout.String())
+	}
+}
+
+func TestRunSubnetContains(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if err := Run([]string{"subnet", "--contains", "10.42.1.2", "10.0.0.0/8"}, strings.NewReader(""), &stdout, &stderr); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := stdout.String(), "true\n"; got != want {
+		t.Fatalf("output = %q; want %q", got, want)
+	}
+}

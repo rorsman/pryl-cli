@@ -48,6 +48,24 @@ pryl secret generate --length 32 --print
 
 macOS uses the built-in `pbcopy` command. Linux requires `wl-copy`, `xclip`, or `xsel` for clipboard support.
 
+### Subnets
+
+Calculate IPv4 and IPv6 network ranges from CIDR notation:
+
+```sh
+pryl subnet 192.168.1.0/24
+pryl subnet 2001:db8::/64
+```
+
+Check whether an address belongs to a subnet or return machine-readable JSON:
+
+```sh
+pryl subnet --contains 192.168.1.42 192.168.1.0/24
+pryl subnet --json 192.168.1.0/24
+```
+
+IPv4 `/31` and `/32` networks, and IPv6 networks, report their complete address range as usable.
+
 ### Encoding and decoding
 
 Input can be supplied as an argument or through stdin. Output is written without an extra newline, making these commands suitable for pipelines and binary data.
